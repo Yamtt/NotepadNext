@@ -16,7 +16,9 @@
 
 #include "Debugging.h"
 
+#if defined(_WIN32)
 #define CATCH_CONFIG_WINDOWS_CRTDBG
+#endif
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 
@@ -33,7 +35,7 @@ void Platform::DebugPrintf(const char *format, ...) noexcept {
 	char buffer[2000];
 	va_list pArguments;
 	va_start(pArguments, format);
-	vsprintf(buffer, format, pArguments);
+	vsnprintf(buffer, std::size(buffer), format, pArguments);
 	va_end(pArguments);
 	fprintf(stderr, "%s", buffer);
 }

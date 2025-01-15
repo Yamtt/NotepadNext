@@ -53,11 +53,16 @@ win32 {
     openssl.path = $$OUT_PWD
 }
 
+macos {
+    QMAKE_INFO_PLIST = ../../deploy/macos/info.plist
+}
+
 COPIES += license
 license.files = ../../LICENSE
 license.path = $$OUT_PWD
 
 SOURCES += \
+    ApplicationSettings.cpp \
     ColorPickerDelegate.cpp \
     ComboBoxDelegate.cpp \
     Converter.cpp \
@@ -66,13 +71,12 @@ SOURCES += \
     EditorHexViewerTableModel.cpp \
     EditorManager.cpp \
     EditorPrintPreviewRenderer.cpp \
+    widgets/FadingIndicator.cpp \
     FileDialogHelpers.cpp \
     Finder.cpp \
     HtmlConverter.cpp \
     IFaceTable.cpp \
     IFaceTableMixer.cpp \
-    LanguageKeywordsModel.cpp \
-    LanguagePropertiesModel.cpp \
     LanguageStylesModel.cpp \
     LuaExtension.cpp \
     LuaState.cpp \
@@ -85,7 +89,7 @@ SOURCES += \
     NotepadNextApplication.cpp \
     NppImporter.cpp \
     QRegexSearch.cpp \
-    QuickFindWidget.cpp \
+    widgets/QuickFindWidget.cpp \
     RangeAllocator.cpp \
     RecentFilesListManager.cpp \
     RecentFilesListMenuBuilder.cpp \
@@ -93,10 +97,11 @@ SOURCES += \
     SciIFaceTable.cpp \
     ScintillaCommenter.cpp \
     ScintillaNext.cpp \
+    SearchResultsCollector.cpp \
     SelectionTracker.cpp \
     SessionManager.cpp \
-    Settings.cpp \
     SpinBoxDelegate.cpp \
+    TranslationManager.cpp \
     UndoAction.cpp \
     ZoomEventWatcher.cpp \
     decorators/ApplicationDecorator.cpp \
@@ -105,6 +110,7 @@ SOURCES += \
     decorators/BetterMultiSelection.cpp \
     decorators/BookMarkDecorator.cpp \
     decorators/EditorConfigAppDecorator.cpp \
+    decorators/HTMLAutoCompleteDecorator.cpp \
     decorators/SurroundSelection.cpp \
     decorators/URLFinder.cpp \
     dialogs/ColumnEditorDialog.cpp \
@@ -132,6 +138,7 @@ SOURCES += \
     widgets/StatusLabel.cpp
 
 HEADERS += \
+    ApplicationSettings.h \
     ColorPickerDelegate.h \
     ComboBoxDelegate.h \
     Converter.h \
@@ -141,14 +148,14 @@ HEADERS += \
     EditorHexViewerTableModel.h \
     EditorManager.h \
     EditorPrintPreviewRenderer.h \
+    widgets/FadingIndicator.h \
     FileDialogHelpers.h \
     Finder.h \
     FocusWatcher.h \
     HtmlConverter.h \
     IFaceTable.h \
     IFaceTableMixer.h \
-    LanguageKeywordsModel.h \
-    LanguagePropertiesModel.h \
+    ISearchResultsHandler.h \
     LanguageStylesModel.h \
     LuaExtension.h \
     LuaState.h \
@@ -161,7 +168,7 @@ HEADERS += \
     NotepadNextApplication.h \
     NppImporter.h \
     QRegexSearch.h \
-    QuickFindWidget.h \
+    widgets/QuickFindWidget.h \
     RangeAllocator.h \
     RecentFilesListManager.h \
     RecentFilesListMenuBuilder.h \
@@ -170,10 +177,11 @@ HEADERS += \
     ScintillaCommenter.h \
     ScintillaEnums.h \
     ScintillaNext.h \
+    SearchResultsCollector.h \
     SelectionTracker.h \
     SessionManager.h \
-    Settings.h \
     SpinBoxDelegate.h \
+    TranslationManager.h \
     UndoAction.h \
     ZoomEventWatcher.h \
     decorators/ApplicationDecorator.h \
@@ -182,6 +190,7 @@ HEADERS += \
     decorators/BetterMultiSelection.h \
     decorators/BookMarkDecorator.h \
     decorators/EditorConfigAppDecorator.h \
+    decorators/HTMLAutoCompleteDecorator.h \
     decorators/SurroundSelection.h \
     decorators/URLFinder.h \
     dialogs/ColumnEditorDialog.h \
@@ -208,7 +217,7 @@ HEADERS += \
     widgets/StatusLabel.h
 
 FORMS += \
-    QuickFindWidget.ui \
+    widgets/QuickFindWidget.ui \
     dialogs/ColumnEditorDialog.ui \
     dialogs/MacroEditorDialog.ui \
     docks/DebugLogDock.ui \

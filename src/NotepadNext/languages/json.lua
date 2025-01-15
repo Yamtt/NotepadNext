@@ -2,8 +2,17 @@ local L = {}
 
 L.lexer = "json"
 
+L.first_line = {
+	"^{[\r\n]",
+}
+
 L.extensions = {
 	"json",
+}
+
+L.properties = {
+	["lexer.json.escape.sequence"] = "1",
+	["lexer.json.allow.comments"] = "1",
 }
 
 L.keywords = {
@@ -82,8 +91,9 @@ L.styles = {
 	},
 	["ERROR"] = {
 		id = 13,
-		fgColor = rgb(0xFFFF80),
-		bgColor = rgb(0xFF0000),
+		fgColor = rgb(0xFF0000),
+		bgColor = rgb(0xFFFFFF),
+		fontStyle = 1,
 	},
 }
 return L

@@ -40,12 +40,8 @@ static const char *const RegistryWordListDesc[] = {
 };
 
 struct OptionsRegistry {
-	bool foldCompact;
-	bool fold;
-	OptionsRegistry() {
-		foldCompact = false;
-		fold = false;
-	}
+	bool foldCompact = false;
+	bool fold = false;
 };
 
 struct OptionSetRegistry : public OptionSet<OptionsRegistry> {
@@ -416,7 +412,7 @@ void SCI_METHOD LexerRegistry::Fold(Sci_PositionU startPos,
 	styler.SetLevel(currLine, level);
 }
 
-LexerModule lmRegistry(SCLEX_REGISTRY,
+extern const LexerModule lmRegistry(SCLEX_REGISTRY,
 					   LexerRegistry::LexerFactoryRegistry,
 					   "registry",
 					   RegistryWordListDesc);

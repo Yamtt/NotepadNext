@@ -6,13 +6,14 @@
 
 QT       += core gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+equals(QT_MAJOR_VERSION, 6): QT += core5compat
 
 TARGET = ScintillaEditBase
 TEMPLATE = lib
 CONFIG += lib_bundle
 CONFIG += c++1z
 
-VERSION = 5.3.2
+VERSION = 5.5.4
 
 SOURCES += \
     PlatQt.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
     ../../src/ViewStyle.cxx \
     ../../src/UniqueString.cxx \
     ../../src/UniConversion.cxx \
+    ../../src/UndoHistory.cxx \
     ../../src/Style.cxx \
     ../../src/Selection.cxx \
     ../../src/ScintillaBase.cxx \
@@ -57,6 +59,7 @@ HEADERS  += \
     ScintillaEditBase.h \
     ../../src/XPM.h \
     ../../src/ViewStyle.h \
+    ../../src/UndoHistory.h \
     ../../src/UniConversion.h \
     ../../src/Style.h \
     ../../src/SplitVector.h \
@@ -92,7 +95,7 @@ OTHER_FILES +=
 
 INCLUDEPATH += ../../include ../../src
 
-DEFINES += SCINTILLA_QT=1 MAKING_LIBRARY=1 _CRT_SECURE_NO_DEPRECATE=1
+DEFINES += SCINTILLA_QT=1 MAKING_LIBRARY=1
 CONFIG(release, debug|release) {
     DEFINES += NDEBUG=1
 }

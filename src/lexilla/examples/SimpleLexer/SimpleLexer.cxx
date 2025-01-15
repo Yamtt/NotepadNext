@@ -27,6 +27,7 @@ style.simple.1=fore:#FF0000
 #include <string.h>
 #include <assert.h>
 
+#include <string>
 #include <string_view>
 
 #include "ILexer.h"
@@ -79,7 +80,7 @@ public:
         }
 };
 
-#if _WIN32
+#if defined(_WIN32)
 #define EXPORT_FUNCTION __declspec(dllexport)
 #define CALLING_CONVENTION __stdcall
 #else

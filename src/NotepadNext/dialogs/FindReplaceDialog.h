@@ -26,7 +26,7 @@
 #include <QTabBar>
 
 #include "Finder.h"
-#include "SearchResultsDock.h"
+#include "ISearchResultsHandler.h"
 
 
 class ScintillaNext;
@@ -48,7 +48,7 @@ public:
         MARK_TAB = 3
     };
 
-    explicit FindReplaceDialog(SearchResultsDock *searchResults, MainWindow *window = nullptr);
+    explicit FindReplaceDialog(ISearchResultsHandler *searchResults, MainWindow *window = nullptr);
     ~FindReplaceDialog() override;
 
     void setFindString(const QString &string);
@@ -56,9 +56,12 @@ public:
 
     QString replaceString();
 
+    void setSearchResultsHandler(ISearchResultsHandler *searchResultsHandler);
+
 protected:
     bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 signals:
     void windowActivated();
@@ -100,14 +103,13 @@ private:
     void updateReplaceList(const QString &text);
 
     bool isFirstTime = true;
-    QPoint position;
+    QPoint lastClosedPosition;
     Ui::FindReplaceDialog *ui;
 
     ScintillaNext *editor;
     QStatusBar *statusBar;
     QTabBar *tabBar;
-
-    SearchResultsDock *searchResults;
+    ISearchResultsHandler *searchResultsHandler;
     Finder *finder;
 };
 

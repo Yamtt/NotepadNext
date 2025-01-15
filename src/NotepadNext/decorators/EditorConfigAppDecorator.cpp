@@ -41,11 +41,6 @@ private:
 };
 
 
-static bool isNewline(char c)
-{
-    return c == '\n' || c == '\r';
-}
-
 EditorConfigAppDecorator::EditorConfigAppDecorator(NotepadNextApplication *app)
      : ApplicationDecorator(app)
 {
@@ -69,6 +64,9 @@ void EditorConfigAppDecorator::doEditorConfig(ScintillaNext *editor)
             if (settings.contains(QStringLiteral("indent_style"))) {
                 if (settings[QStringLiteral("indent_style")] == QStringLiteral("tab")) editor->setUseTabs(true);
                 else if (settings[QStringLiteral("indent_style")] == QStringLiteral("space")) editor->setUseTabs(false);
+
+                // Set a flag so that the tab/spaces won't get overridden
+                editor->QObject::setProperty("nn_skip_usetabs", "EditorConfig");
             }
 
             if (settings.contains(QStringLiteral("indent_size")) && settings[QStringLiteral("indent_size")].toInt() > 0) {
@@ -77,6 +75,9 @@ void EditorConfigAppDecorator::doEditorConfig(ScintillaNext *editor)
 
             if (settings.contains(QStringLiteral("tab_width")) && settings[QStringLiteral("tab_width")].toInt() > 0) {
                 editor->setTabWidth(settings[QStringLiteral("tab_width")].toInt());
+
+                // Set a flag so that the tab width won't get overridden
+                editor->QObject::setProperty("nn_skip_tabwidth", "EditorConfig");
             }
 
             if (settings.contains(QStringLiteral("end_of_line"))) {
@@ -141,12 +142,6 @@ void EditorConfigAppDecorator::ensureNoFinalNewline()
 {
     ScintillaNext *editor = qobject_cast<ScintillaNext *>(sender());
     const PreventUnfolding pu(editor);
-    const int length = editor->length();
-    int position = length;
 
-    while (position > 0 && isNewline(editor->charAt(position - 1))) {
-        position--;
-    }
-
-    editor->deleteRange(position, length - position);
+    editor->deleteTrailingEmptyLines();
 }

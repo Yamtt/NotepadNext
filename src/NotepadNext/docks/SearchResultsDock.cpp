@@ -25,6 +25,7 @@
 #include <QPointer>
 #include <QMenu>
 #include <QShortcut>
+#include <QClipboard>
 
 enum SearchResultData
 {
@@ -39,10 +40,18 @@ SearchResultsDock::SearchResultsDock(QWidget *parent) :
 {
     ui->setupUi(this);
 
+#ifdef Q_OS_MACOS
+    // Set a slightly larger font on MacOS
+    QFont font("Courier New", 14);
+    ui->treeWidget->setFont(font);
+#endif
+
     // Close the results when escape is pressed
     new QShortcut(QKeySequence::Cancel, this, this, &SearchResultsDock::close, Qt::WidgetWithChildrenShortcut);
 
     connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &SearchResultsDock::itemActivated);
+    connect(ui->treeWidget, &QTreeWidget::itemExpanded, this, &SearchResultsDock::itemExpanded);
+    connect(ui->btnCopyResults, &QPushButton::released,this, &SearchResultsDock::copySearchResultsToClipboard);
 
     connect(ui->treeWidget, &QTreeWidget::customContextMenuRequested, this, [=](const QPoint &pos) {
         QTreeWidgetItem *item = ui->treeWidget->itemAt(pos);
@@ -71,9 +80,15 @@ SearchResultsDock::~SearchResultsDock()
 
 void SearchResultsDock::newSearch(const QString searchTerm)
 {
+    show();
+
     this->searchTerm = searchTerm;
 
-    ui->treeWidget->collapseAll();
+    for (int i = 0; i < ui->treeWidget->topLevelItemCount(); ++i)
+    {
+        const QTreeWidgetItem* topLevelItem = ui->treeWidget->topLevelItem(i);
+        ui->treeWidget->collapseItem(topLevelItem);
+    }
 
     currentSearch = new QTreeWidgetItem(ui->treeWidget);
     currentSearch->setBackground(0, QColor(232, 232, 255));
@@ -104,7 +119,7 @@ void SearchResultsDock::newFileEntry(ScintillaNext *editor)
     updateSearchStatus();
 }
 
-void SearchResultsDock::newResultsEntry(const QString line, int lineNumber, int startPositionFromBeginning, int endPositionFromBeginning)
+void SearchResultsDock::newResultsEntry(const QString line, int lineNumber, int startPositionFromBeginning, int endPositionFromBeginning, int hitCount)
 {
     QTreeWidgetItem *item = new QTreeWidgetItem(currentFile);
 
@@ -118,8 +133,8 @@ void SearchResultsDock::newResultsEntry(const QString line, int lineNumber, int 
 
     item->setText(1, line);
 
-    totalFileHitCount++;
-    totalHitCount++;
+    totalFileHitCount += hitCount;
+    totalHitCount += hitCount;
 
     updateSearchStatus();
 }
@@ -133,6 +148,7 @@ void SearchResultsDock::completeSearch()
     totalHitCount = 0;
 
     ui->treeWidget->resizeColumnToContents(0);
+    ui->treeWidget->resizeColumnToContents(1);
 }
 
 void SearchResultsDock::collapseAll() const
@@ -184,6 +200,11 @@ void SearchResultsDock::itemActivated(QTreeWidgetItem *item, int column)
     }
 }
 
+void SearchResultsDock::itemExpanded(QTreeWidgetItem *)
+{
+    ui->treeWidget->resizeColumnToContents(1);
+}
+
 void SearchResultsDock::updateSearchStatus()
 {
     currentSearch->setText(0, QStringLiteral("Search \"%1\" (%L2 hits in %L3 files)").arg(searchTerm).arg(totalHitCount).arg(currentFileCount));
@@ -191,3 +212,18 @@ void SearchResultsDock::updateSearchStatus()
     if (currentFile)
         currentFile->setText(0, QStringLiteral("%1 (%L2 hits)").arg(currentFilePath).arg(totalFileHitCount));
 }
+
+void SearchResultsDock::copySearchResultsToClipboard()
+{
+    QStringList results;
+    QTreeWidgetItemIterator it(ui->treeWidget);
+
+    while (*it) {
+        const QTreeWidgetItem *item = *it;
+        results.append(QStringLiteral("%1 %2").arg(item->text(0)).arg(item->text(1)));
+        ++it;
+    }
+
+    QGuiApplication::clipboard()->setText(results.join('\n'));
+}
+

@@ -9,11 +9,13 @@
 #include <cassert>
 #include <cstring>
 
+#include <string>
 #include <algorithm>
 #include <iterator>
 #include <memory>
 
 #include "WordList.h"
+#include "CharacterSet.h"
 
 using namespace Lexilla;
 
@@ -106,10 +108,15 @@ void WordList::Clear() noexcept {
 	len = 0;
 }
 
-bool WordList::Set(const char *s) {
+bool WordList::Set(const char *s, bool lowerCase) {
 	const size_t lenS = strlen(s) + 1;
 	std::unique_ptr<char[]> listTemp = std::make_unique<char[]>(lenS);
 	memcpy(listTemp.get(), s, lenS);
+	if (lowerCase) {
+		for (size_t i = 0; i < lenS; i++) {
+			listTemp[i] = MakeLowerCase(listTemp[i]);
+		}
+	}
 	size_t lenTemp = 0;
 	std::unique_ptr<char *[]> wordsTemp = ArrayFromWordList(listTemp.get(), lenS - 1, &lenTemp, onlyLineEnds);
 	std::sort(wordsTemp.get(), wordsTemp.get() + lenTemp, cmpWords);
@@ -133,7 +140,7 @@ bool WordList::Set(const char *s) {
 	len = lenTemp;
 	std::fill(starts, std::end(starts), -1);
 	for (int l = static_cast<int>(len - 1); l >= 0; l--) {
-		unsigned char indexChar = words[l][0];
+		unsigned char const indexChar = words[l][0];
 		starts[indexChar] = l;
 	}
 	return true;
@@ -147,10 +154,11 @@ bool WordList::Set(const char *s) {
 bool WordList::InList(const char *s) const noexcept {
 	if (!words)
 		return false;
-	const unsigned char firstChar = s[0];
+	const char first = s[0];
+	const unsigned char firstChar = first;
 	int j = starts[firstChar];
 	if (j >= 0) {
-		while (words[j][0] == firstChar) {
+		while (words[j][0] == first) {
 			if (s[1] == words[j][1]) {
 				const char *a = words[j] + 1;
 				const char *b = s + 1;
@@ -181,6 +189,12 @@ bool WordList::InList(const char *s) const noexcept {
 	return false;
 }
 
+/** convenience overload so can easily call with std::string.
+ */
+bool WordList::InList(const std::string &s) const noexcept {
+	return InList(s.c_str());
+}
+
 /** similar to InList, but word s can be a substring of keyword.
  * eg. the keyword define is defined as def~ine. This means the word must start
  * with def to be a keyword, but also defi, defin and define are valid.
@@ -189,10 +203,11 @@ bool WordList::InList(const char *s) const noexcept {
 bool WordList::InListAbbreviated(const char *s, const char marker) const noexcept {
 	if (!words)
 		return false;
-	const unsigned char firstChar = s[0];
+	const char first = s[0];
+	const unsigned char firstChar = first;
 	int j = starts[firstChar];
 	if (j >= 0) {
-		while (words[j][0] == firstChar) {
+		while (words[j][0] == first) {
 			bool isSubword = false;
 			int start = 1;
 			if (words[j][1] == marker) {
@@ -233,7 +248,7 @@ bool WordList::InListAbbreviated(const char *s, const char marker) const noexcep
 	return false;
 }
 
-/** similar to InListAbbreviated, but word s can be a abridged version of a keyword.
+/** similar to InListAbbreviated, but word s can be an abridged version of a keyword.
 * eg. the keyword is defined as "after.~:". This means the word must have a prefix (begins with) of
 * "after." and suffix (ends with) of ":" to be a keyword, Hence "after.field:" , "after.form.item:" are valid.
 * Similarly "~.is.valid" keyword is suffix only... hence "field.is.valid" , "form.is.valid" are valid.
@@ -243,10 +258,11 @@ bool WordList::InListAbbreviated(const char *s, const char marker) const noexcep
 bool WordList::InListAbridged(const char *s, const char marker) const noexcept {
 	if (!words)
 		return false;
-	const unsigned char firstChar = s[0];
+	const char first = s[0];
+	const unsigned char firstChar = first;
 	int j = starts[firstChar];
 	if (j >= 0) {
-		while (words[j][0] == firstChar) {
+		while (words[j][0] == first) {
 			const char *a = words[j];
 			const char *b = s;
 			while (*a && *a == *b) {

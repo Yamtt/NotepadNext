@@ -32,23 +32,28 @@
 const int CHUNK_SIZE = 1024 * 1024 * 4; // Not sure what is best
 
 
-static bool writeToDisk(const QByteArray &data, const QString &path)
+static QFileDevice::FileError writeToDisk(const QByteArray &data, const QString &path)
 {
     qInfo(Q_FUNC_INFO);
 
-    QSaveFile file(path);
-    file.setDirectWriteFallback(true);
+    QFile file(path);
 
     if (file.open(QIODevice::WriteOnly)) {
-        file.write(data);
-        return file.commit();
+        if (file.write(data) != -1) {
+            file.close();
+            return QFileDevice::NoError;
+        }
     }
-    else {
-        qWarning("writeToDisk() failure: %s", qPrintable(file.errorString()));
-        return false;
-    }
+
+    // If it got to this point there was an error
+    qWarning("writeToDisk() failure code %d: %s", file.error(), qPrintable(file.errorString()));
+    return file.error();
 }
 
+static bool isNewlineCharacter(char c)
+{
+    return c == '\n' || c == '\r';
+}
 
 ScintillaNext::ScintillaNext(QString name, QWidget *parent) :
     ScintillaEdit(parent),
@@ -92,6 +97,30 @@ ScintillaNext *ScintillaNext::fromFile(const QString &filePath, bool tryToCreate
     return editor;
 }
 
+QString ScintillaNext::eolModeToString(int eolMode)
+{
+    if (eolMode == SC_EOL_CRLF)
+        return QStringLiteral("crlf");
+    else if (eolMode == SC_EOL_CR)
+        return QStringLiteral("cr");
+    else if (eolMode == SC_EOL_LF)
+        return QStringLiteral("lf");
+    else
+        return QString(); // unknown
+}
+
+int ScintillaNext::stringToEolMode(QString eolMode)
+{
+    if (eolMode == QStringLiteral("crlf"))
+        return SC_EOL_CRLF;
+    else if (eolMode == QStringLiteral("cr"))
+        return SC_EOL_CR;
+    else if (eolMode == QStringLiteral("lf"))
+        return SC_EOL_LF;
+    else
+        return -1;
+}
+
 int ScintillaNext::allocateIndicator(const QString &name)
 {
     return indicatorResources.requestResource(name);
@@ -109,6 +138,85 @@ void ScintillaNext::goToRange(const Sci_CharacterRange &range)
         setSelection(range.cpMin, range.cpMax);
         scrollRange(range.cpMax, range.cpMin);
     }
+}
+
+QByteArray ScintillaNext::eolString() const
+{
+    const int eol = eOLMode();
+
+    if (eol == SC_EOL_LF) return QByteArrayLiteral("\n");
+    else if (eol == SC_EOL_CRLF) return QByteArrayLiteral("\r\n");
+    else return QByteArrayLiteral("\r");
+}
+
+bool ScintillaNext::lineIsEmpty(int line)
+{
+    return (lineEndPosition(line) - positionFromLine(line)) == 0;
+}
+
+void ScintillaNext::deleteLine(int line)
+{
+    deleteRange(positionFromLine(line), lineLength(line));
+}
+
+void ScintillaNext::cutAllowLine()
+{
+    if (selectionEmpty()) {
+        copyAllowLine();
+        lineDelete();
+    }
+    else {
+        cut();
+    }
+}
+
+void ScintillaNext::modifyFoldLevels(int level, int action)
+{
+    const int totalLines = lineCount();
+
+    int line = 0;
+    while (line < totalLines) {
+        int foldFlags = foldLevel(line); // Even though its called fold level it contains several other flags
+        bool isHeader = foldFlags & SC_FOLDLEVELHEADERFLAG;
+        int actualLevel = (foldFlags & SC_FOLDLEVELNUMBERMASK) - SC_FOLDLEVELBASE;
+
+        if (isHeader && actualLevel == level) {
+            foldLine(line, action);
+            line = lastChild(line, -1) + 1;
+        }
+        else {
+            ++line;
+        }
+    }
+}
+
+void ScintillaNext::foldAllLevels(int level)
+{
+    modifyFoldLevels(level, SC_FOLDACTION_CONTRACT);
+}
+
+void ScintillaNext::unFoldAllLevels(int level)
+{
+    modifyFoldLevels(level, SC_FOLDACTION_EXPAND);
+}
+
+void ScintillaNext::deleteLeadingEmptyLines()
+{
+    while (lineCount() > 1 && lineIsEmpty(0)) {
+        deleteLine(0);
+    }
+}
+
+void ScintillaNext::deleteTrailingEmptyLines()
+{
+    const int docLength = length();
+    int position = docLength;
+
+    while (position > 0 && isNewlineCharacter(charAt(position - 1))) {
+        position--;
+    }
+
+    deleteRange(position, docLength - position);
 }
 
 bool ScintillaNext::isSavedToDisk() const
@@ -190,7 +298,7 @@ void ScintillaNext::close()
     deleteLater();
 }
 
-bool ScintillaNext::save()
+QFileDevice::FileError ScintillaNext::save()
 {
     qInfo(Q_FUNC_INFO);
 
@@ -198,9 +306,9 @@ bool ScintillaNext::save()
 
     emit aboutToSave();
 
-    bool writeSuccessful = writeToDisk(QByteArray::fromRawData((char*)characterPointer(), textLength()), fileInfo.filePath());
+    QFileDevice::FileError writeSuccessful = writeToDisk(QByteArray::fromRawData((char*)characterPointer(), textLength()), fileInfo.filePath());
 
-    if (writeSuccessful) {
+    if (writeSuccessful == QFileDevice::NoError) {
         updateTimestamp();
         setSavePoint();
 
@@ -244,15 +352,15 @@ void ScintillaNext::reload()
     return;
 }
 
-bool ScintillaNext::saveAs(const QString &newFilePath)
+QFileDevice::FileError ScintillaNext::saveAs(const QString &newFilePath)
 {
     bool isRenamed = bufferType == ScintillaNext::New || fileInfo.canonicalFilePath() != newFilePath;
 
     emit aboutToSave();
 
-    bool saveSuccessful = writeToDisk(QByteArray::fromRawData((char*)characterPointer(), textLength()), newFilePath);
+    QFileDevice::FileError saveSuccessful = writeToDisk(QByteArray::fromRawData((char*)characterPointer(), textLength()), newFilePath);
 
-    if (saveSuccessful) {
+    if (saveSuccessful == QFileDevice::NoError) {
         setFileInfo(newFilePath);
         setSavePoint();
 
@@ -269,7 +377,7 @@ bool ScintillaNext::saveAs(const QString &newFilePath)
     return saveSuccessful;
 }
 
-bool ScintillaNext::saveCopyAs(const QString &filePath)
+QFileDevice::FileError ScintillaNext::saveCopyAs(const QString &filePath)
 {
     return writeToDisk(QByteArray::fromRawData((char*)characterPointer(), textLength()), filePath);
 }
@@ -403,7 +511,7 @@ bool ScintillaNext::readFromDisk(QFile &file)
     }
 
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning("Something bad happened when opening \"%s\": (%d) %s", qUtf8Printable(file.fileName()), file.error(), qUtf8Printable(file.errorString()));
+        qWarning("QFile::open() failed when opening \"%s\" - error code %d: %s", qUtf8Printable(file.fileName()), file.error(), qUtf8Printable(file.errorString()));
         return false;
     }
 

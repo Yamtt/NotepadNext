@@ -3,6 +3,7 @@
 // (c) 2009 Andreas Rumpf
 /** @file LexNimrod.cxx
  ** Lexer for Nimrod.
+ ** This lexer has been superceded by the "nim" lexer in LexNim.cxx.
  **/
 // Copyright 1998-2002 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
@@ -430,5 +431,5 @@ static const char * const nimrodWordListDesc[] = {
 	0
 };
 
-LexerModule lmNimrod(SCLEX_NIMROD, ColouriseNimrodDoc, "nimrod", FoldNimrodDoc,
+extern const LexerModule lmNimrod(SCLEX_NIMROD, ColouriseNimrodDoc, "nimrod", FoldNimrodDoc,
 				     nimrodWordListDesc);

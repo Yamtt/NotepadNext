@@ -22,10 +22,11 @@
 #include "Geometry.h"
 #include "Platform.h"
 
+#include "DictionaryForCF.h"
 #include "QuartzTextLayout.h"
 
 NSRect PRectangleToNSRect(const Scintilla::Internal::PRectangle &rc);
-Scintilla::Internal::PRectangle NSRectToPRectangle(NSRect &rc);
+Scintilla::Internal::PRectangle NSRectToPRectangle(const NSRect &rc);
 CFStringEncoding EncodingFromCharacterSet(bool unicode, Scintilla::CharacterSet characterSet);
 
 @interface ScintillaContextMenu : NSMenu {

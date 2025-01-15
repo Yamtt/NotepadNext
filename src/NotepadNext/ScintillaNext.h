@@ -44,6 +44,8 @@ public:
     virtual ~ScintillaNext();
 
     static ScintillaNext *fromFile(const QString &filePath, bool tryToCreate=false);
+    static QString eolModeToString(int eolMode);
+    static int stringToEolMode(QString eolMode);
 
     int allocateIndicator(const QString &name);
 
@@ -60,6 +62,21 @@ public:
     void forEachLineInSelection(int selection, Func callback);
 
     void goToRange(const Sci_CharacterRange &range);
+
+    QByteArray eolString() const;
+
+    bool lineIsEmpty(int line);
+
+    void deleteLine(int line);
+
+    void cutAllowLine();
+
+    void modifyFoldLevels(int level, int action);
+    void foldAllLevels(int level);
+    void unFoldAllLevels(int level);
+
+    void deleteLeadingEmptyLines();
+    void deleteTrailingEmptyLines();
 
     bool isFile() const;
     QFileInfo getFileInfo() const;
@@ -103,10 +120,10 @@ public:
 
 public slots:
     void close();
-    bool save();
+    QFileDevice::FileError save();
     void reload();
-    bool saveAs(const QString &newFilePath);
-    bool saveCopyAs(const QString &filePath);
+    QFileDevice::FileError saveAs(const QString &newFilePath);
+    QFileDevice::FileError saveCopyAs(const QString &filePath);
     bool rename(const QString &newFilePath);
     ScintillaNext::FileStateChange checkFileForStateChange();
     bool moveToTrash();
@@ -161,6 +178,8 @@ void ScintillaNext::forEachMatchInRange(const QByteArray &text, Func callback, S
     int flags = searchFlags();
 
     while (send(SCI_FINDTEXT, flags, reinterpret_cast<sptr_t>(&ttf)) != -1) {
+        if(ttf.chrgText.cpMin == ttf.chrgText.cpMax)
+            break;
         ttf.chrg.cpMin = callback(ttf.chrgText.cpMin, ttf.chrgText.cpMax);
     }
 }

@@ -113,6 +113,32 @@ static QFont::StyleStrategy ChooseStrategy(FontQuality eff)
 	}
 }
 
+static QFont::Stretch QStretchFromFontStretch(Scintilla::FontStretch stretch)
+{
+	switch (stretch) {
+	case FontStretch::UltraCondensed:
+		return QFont::Stretch::UltraCondensed;
+	case FontStretch::ExtraCondensed:
+		return QFont::Stretch::ExtraCondensed;
+	case FontStretch::Condensed:
+		return QFont::Stretch::Condensed;
+	case FontStretch::SemiCondensed:
+		return QFont::Stretch::SemiCondensed;
+	case FontStretch::Normal:
+		return QFont::Stretch::Unstretched;
+	case FontStretch::SemiExpanded:
+		return QFont::Stretch::SemiExpanded;
+	case FontStretch::Expanded:
+		return QFont::Stretch::Expanded;
+	case FontStretch::ExtraExpanded:
+		return QFont::Stretch::ExtraExpanded;
+	case FontStretch::UltraExpanded:
+		return QFont::Stretch::UltraExpanded;
+	default:
+		return QFont::Stretch::Unstretched;
+	}
+}
+
 class FontAndCharacterSet : public Font {
 public:
 	CharacterSet characterSet = CharacterSet::Ansi;
@@ -123,6 +149,7 @@ public:
 		pfont->setFamily(QString::fromUtf8(fp.faceName));
 		pfont->setPointSizeF(fp.size);
 		pfont->setBold(static_cast<int>(fp.weight) > 500);
+		pfont->setStretch(QStretchFromFontStretch(fp.stretch));
 		pfont->setItalic(fp.italic);
 	}
 };
@@ -545,7 +572,7 @@ void SurfaceImpl::DrawTextTransparent(PRectangle rc,
 void SurfaceImpl::SetClip(PRectangle rc)
 {
 	GetPainter()->save();
-	GetPainter()->setClipRect(QRectFFromPRect(rc));
+	GetPainter()->setClipRect(QRectFFromPRect(rc), Qt::IntersectClip);
 }
 
 void SurfaceImpl::PopClip()
@@ -1332,7 +1359,7 @@ void Platform::DebugPrintf(const char *format, ...) noexcept
 	char buffer[2000];
 	va_list pArguments{};
 	va_start(pArguments, format);
-	vsprintf(buffer, format, pArguments);
+	vsnprintf(buffer, std::size(buffer), format, pArguments);
 	va_end(pArguments);
 	Platform::DebugDisplay(buffer);
 }
@@ -1345,7 +1372,7 @@ bool Platform::ShowAssertionPopUps(bool /*assertionPopUps*/) noexcept
 void Platform::Assert(const char *c, const char *file, int line) noexcept
 {
 	char buffer[2000];
-	sprintf(buffer, "Assertion [%s] failed at %s %d", c, file, line);
+	snprintf(buffer, std::size(buffer), "Assertion [%s] failed at %s %d", c, file, line);
 	if (Platform::ShowAssertionPopUps(false)) {
 		QMessageBox mb("Assertion Failure", buffer, QMessageBox::NoIcon,
 			QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
